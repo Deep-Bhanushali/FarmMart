@@ -8,7 +8,6 @@ import { Search, Filter, Plus, Edit, Trash2, Eye, Star } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
 import { useCart } from "@/hooks/useCart";
 import Header from "@/components/Header";
-// Import FilterSidebar normally to avoid build issues
 import toast from "react-hot-toast";
 import FilterSidebar from "@/components/FilterSidebar";
 
@@ -80,7 +79,7 @@ export default function ProductsPage() {
         limit: "12",
         sortBy,
         sortOrder,
-        search: debouncedSearchTerm, // Use the debounced search term
+        search: debouncedSearchTerm, 
         ...activeFilters,
       });
 
@@ -151,6 +150,42 @@ export default function ProductsPage() {
       toast.error("An error occurred while deleting the product.");
     }
   };
+
+  // --- START: NEW PAGINATION LOGIC ---
+  const getPaginationItems = () => {
+    const items: (number | string)[] = [];
+    const maxPagesToShow = 3;
+    const startPage = Math.max(2, currentPage - 1);
+    const endPage = Math.min(totalPages - 1, currentPage + 1);
+
+    // Always add the first page
+    items.push(1);
+
+    // Add ellipsis if there's a gap after the first page
+    if (startPage > 2) {
+      items.push("...");
+    }
+
+    // Add pages around the current page
+    for (let i = startPage; i <= endPage; i++) {
+      items.push(i);
+    }
+    
+    // Add ellipsis if there's a gap before the last page
+    if (endPage < totalPages - 1) {
+      items.push("...");
+    }
+
+    // Always add the last page if there's more than one page
+    if (totalPages > 1) {
+      items.push(totalPages);
+    }
+
+    return items;
+  };
+
+  const paginationItems = getPaginationItems();
+  // --- END: NEW PAGINATION LOGIC ---
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -224,7 +259,7 @@ export default function ProductsPage() {
             </div>
           )}
         </div>
-
+        
         {/* Main Content */}
         {loading ? (
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
@@ -355,10 +390,11 @@ export default function ProductsPage() {
               ))}
             </div>
 
-            {/* Pagination Controls */}
+            {/* --- START: UPDATED PAGINATION CONTROLS --- */}
             {totalPages > 1 && (
               <div className="mt-8 flex justify-center">
-                <nav className="flex items-center space-x-2">
+                {/* The `flex-wrap` and `gap-2` classes are key for mobile responsiveness */}
+                <nav className="flex items-center justify-center flex-wrap gap-2">
                   <button
                     onClick={() => setCurrentPage(Math.max(1, currentPage - 1))}
                     disabled={currentPage === 1}
@@ -366,19 +402,25 @@ export default function ProductsPage() {
                   >
                     Previous
                   </button>
-                  {[...Array(totalPages)].map((_, i) => (
-                    <button
-                      key={i + 1}
-                      onClick={() => setCurrentPage(i + 1)}
-                      className={`px-3 py-2 text-sm font-medium rounded-md ${
-                        currentPage === i + 1
-                          ? "text-white bg-primary-600 border-primary-600"
-                          : "text-gray-500 bg-white border border-gray-300 hover:bg-gray-50"
-                      }`}
-                    >
-                      {i + 1}
-                    </button>
-                  ))}
+                  {paginationItems.map((item, index) =>
+                    typeof item === "number" ? (
+                      <button
+                        key={index}
+                        onClick={() => setCurrentPage(item)}
+                        className={`px-3 py-2 text-sm font-medium rounded-md ${
+                          currentPage === item
+                            ? "text-white bg-primary-600 border-primary-600"
+                            : "text-gray-500 bg-white border border-gray-300 hover:bg-gray-50"
+                        }`}
+                      >
+                        {item}
+                      </button>
+                    ) : (
+                      <span key={index} className="px-3 py-2 text-sm font-medium text-gray-500">
+                        {item}
+                      </span>
+                    )
+                  )}
                   <button
                     onClick={() =>
                       setCurrentPage(Math.min(totalPages, currentPage + 1))
@@ -391,6 +433,7 @@ export default function ProductsPage() {
                 </nav>
               </div>
             )}
+            {/* --- END: UPDATED PAGINATION CONTROLS --- */}
           </>
         )}
       </div>

@@ -1,5 +1,6 @@
 "use client";
-import { useState, useEffect, useRef, useCallback } from "react";
+
+import { useState, useEffect, useRef, useCallback, MouseEvent } from "react";
 import { Bell, Check } from "lucide-react";
 import toast from "react-hot-toast";
 import { formatDistanceToNow } from "date-fns";
@@ -31,7 +32,6 @@ const NotificationBell = () => {
         if (response.ok) {
           const data: ClientNotification[] = await response.json();
 
-          // If polling, check for new unread notifications and show a toast
           if (isPolling) {
             const newUnread = data.filter((n) => !n.read);
             const oldUnreadCount = notifications.filter((n) => !n.read).length;
@@ -49,22 +49,19 @@ const NotificationBell = () => {
     [notifications]
   );
 
-  // Fetch on component mount
   useEffect(() => {
     fetchNotifications();
   }, []);
 
-  // Poll for new notifications every 30 seconds
   useEffect(() => {
     const interval = setInterval(() => {
       fetchNotifications(true);
     }, 30000);
     return () => clearInterval(interval);
-  }, [fetchNotifications]); // Rerun if notifications change
+  }, [fetchNotifications]);
 
-  // Close dropdown when clicking outside
   useEffect(() => {
-    const handleClickOutside = (event: MouseEvent) => {
+    const handleClickOutside = (event: globalThis.MouseEvent) => {
       if (
         dropdownRef.current &&
         !dropdownRef.current.contains(event.target as Node)
@@ -76,34 +73,34 @@ const NotificationBell = () => {
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
 
-  const markAsRead = async (id: string) => {
+  const markAsRead = async (id: string, e: MouseEvent) => {
+    e.preventDefault(); // Prevent Link navigation when clicking the button
+    e.stopPropagation();
     try {
       setNotifications(
         notifications.map((n) => (n._id === id ? { ...n, read: true } : n))
       );
-
       const token = localStorage.getItem("token");
       await fetch(`/api/notifications/${id}`, {
         method: "PATCH",
         headers: { Authorization: `Bearer ${token}` },
       });
     } catch (error) {
-      console.error("Failed to mark notification as read", error)
-      fetchNotifications();
+      console.error("Failed to mark notification as read", error);
+      fetchNotifications(); // Re-fetch to get the true state
     }
   };
 
   const markAllAsRead = async () => {
     try {
       setNotifications(notifications.map((n) => ({ ...n, read: true })));
-
       const token = localStorage.getItem("token");
       await fetch("/api/notifications", {
         method: "PATCH",
         headers: { Authorization: `Bearer ${token}` },
       });
     } catch (error) {
-      console.error("Failed to mark all notifications as read", error);
+      console.error("Failed to mark all as read", error);
       fetchNotifications();
     }
   };
@@ -112,9 +109,9 @@ const NotificationBell = () => {
     <div className="relative" ref={dropdownRef}>
       <button
         onClick={() => setIsOpen(!isOpen)}
-        className="relative p-2 rounded-full hover:bg-gray-100"
+        className="relative p-2 rounded-full hover:bg-gray-100 "
       >
-        <Bell className="h-6 w-6 text-gray-600" />
+        <Bell className="h-6 w-6 text-gray-600 hover:text-primary-600" />
         {unreadCount > 0 && (
           <span className="absolute top-0 right-0 h-4 w-4 bg-red-500 text-white text-xs font-bold rounded-full flex items-center justify-center">
             {unreadCount}
@@ -123,7 +120,11 @@ const NotificationBell = () => {
       </button>
 
       {isOpen && (
-        <div className="absolute right-0 mt-2 w-80 bg-white rounded-lg shadow-xl border z-50">
+        // --- START: RESPONSIVE PADDING FIX ---
+        // On mobile (default), position it 1rem from the right edge and make it a bit narrower.
+        // On medium screens and up (md:), position it flush to the right of its container.
+        <div className="absolute right-4 md:right-0 mt-2 w-72 md:w-80 bg-white rounded-lg shadow-xl border z-50">
+        {/* --- END: RESPONSIVE PADDING FIX --- */}
           <div className="p-4 font-bold border-b flex justify-between items-center">
             <span>Notifications</span>
             {unreadCount > 0 && (
@@ -142,7 +143,7 @@ const NotificationBell = () => {
               </p>
             ) : (
               notifications.map((notif) => (
-                <Link href={`/orders/${notif.link}`} key={notif._id}>
+                <Link href={`/orders/${notif.link}`} key={notif._id} onClick={() => setIsOpen(false)}>
                   <div
                     className={`p-4 border-b hover:bg-gray-50 ${
                       !notif.read ? "bg-blue-50" : ""
@@ -154,8 +155,8 @@ const NotificationBell = () => {
                     </p>
                     {!notif.read && (
                       <button
-                        onClick={() => markAsRead(notif._id)}
-                        className="mt-2 text-xs text-primary-600 font-semibold flex items-center gap-1"
+                        onClick={(e) => markAsRead(notif._id, e)}
+                        className="mt-2 text-xs text-primary-600 font-semibold flex items-center gap-1 hover:underline"
                       >
                         <Check size={14} /> Mark as Read
                       </button>

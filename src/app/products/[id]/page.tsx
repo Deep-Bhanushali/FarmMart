@@ -2,7 +2,7 @@
 
 import { Product } from "@/types";
 
-import { useState, useEffect, useCallback } from "react"; // FIX: Imported useCallback
+import { useState, useEffect, useCallback } from "react";
 import { useParams, useRouter } from "next/navigation";
 import Image from "next/image";
 import {
@@ -26,7 +26,7 @@ import toast from "react-hot-toast";
 export default function ProductDetailPage() {
   const params = useParams();
   const router = useRouter();
-  const { user } = useAuth();
+  const { user, login } = useAuth(); // Get isAuthenticated for like logic
   const { addToCart } = useCart();
 
   const [product, setProduct] = useState<Product | null>(null);
@@ -34,9 +34,8 @@ export default function ProductDetailPage() {
   const [quantity, setQuantity] = useState(1);
   const [selectedImage, setSelectedImage] = useState(0);
   const [showFullDescription, setShowFullDescription] = useState(false);
+  const [isLiked, setIsLiked] = useState(false); // New state for like status
 
-  // FIX: Wrapped fetchProduct in useCallback. This memoizes the function so it doesn't
-  // get recreated on every render, allowing it to be safely used in useEffect's dependency array.
   const fetchProduct = useCallback(async () => {
     try {
       setLoading(true);
@@ -45,22 +44,25 @@ export default function ProductDetailPage() {
 
       if (response.ok) {
         setProduct(data.product);
+        // Set initial like status based on fetched product and current user
+        if (user && data.product.likes?.includes(user._id)) {
+          setIsLiked(true);
+        } else {
+          setIsLiked(false);
+        }
       } else {
         toast.error("Product not found");
         router.push("/products");
       }
     } catch (error) {
-      // FIX: Used the 'error' variable for better debugging.
       console.error("Failed to fetch product:", error);
       toast.error("An error occurred while fetching the product.");
       router.push("/products");
     } finally {
       setLoading(false);
     }
-  }, [params.id, router]);
+  }, [params.id, router, user]); // Add user to dependencies to re-evaluate like status
 
-  // FIX: Added 'fetchProduct' to the dependency array, as required by the linter.
-  // This is now safe because fetchProduct is wrapped in useCallback.
   useEffect(() => {
     if (params.id) {
       fetchProduct();
@@ -70,8 +72,6 @@ export default function ProductDetailPage() {
   const handleAddToCart = () => {
     if (!product) return;
 
-    // FIX: Changed the function call to pass two separate arguments (product, quantity)
-    // as expected by the useCart hook, instead of a single object.
     addToCart(product, quantity);
     toast.success(`${quantity} x ${product.name} added to cart`);
   };
@@ -100,11 +100,77 @@ export default function ProductDetailPage() {
         toast.error(data.error || "Failed to delete product");
       }
     } catch (error) {
-      // FIX: Used the 'error' variable for better debugging.
       console.error("Failed to delete product:", error);
       toast.error("An error occurred while deleting the product.");
     }
   };
+
+  // --- New Handlers for Like and Share ---
+
+  const handleLikeToggle = async () => {
+    if (!login || !user || !product) {
+      toast.error("Please log in to like products.");
+      router.push("/login"); // Redirect to login if not authenticated
+      return;
+    }
+
+    try {
+      const method = isLiked ? "DELETE" : "POST"; // Use DELETE for unlike, POST for like
+      const response = await fetch(`/api/products/${product._id}/like`, {
+        method: method,
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${localStorage.getItem("token")}`,
+        },
+        body: JSON.stringify({ userId: user._id }), // Send user ID to backend
+      });
+
+      if (response.ok) {
+        setIsLiked(!isLiked); // Toggle the local state immediately
+        toast.success(isLiked ? "Product unliked!" : "Product liked!");
+        // Optionally refetch product to get updated likes count if displayed
+        // fetchProduct();
+      } else {
+        const data = await response.json();
+        toast.error(data.error || "Failed to update like status.");
+      }
+    } catch (error) {
+      console.error("Error toggling like status:", error);
+      toast.error("An error occurred while updating like status.");
+    }
+  };
+
+  const handleShare = async () => {
+    if (!product) return;
+
+    const shareData = {
+      title: product.name,
+      text: `Check out this amazing organic product: ${product.name} - ${product.description.substring(0, 100)}...`,
+      url: `${window.location.origin}/products/${product._id}`, // Full URL to the product
+    };
+
+    if (navigator.share) {
+      try {
+        await navigator.share(shareData);
+        toast.success("Product shared successfully!");
+      } catch (error) {
+        console.error("Error sharing:", error);
+        toast.error("Failed to share product.");
+      }
+    } else {
+      // Fallback for browsers that do not support Web Share API
+      // Copy URL to clipboard
+      try {
+        await navigator.clipboard.writeText(shareData.url);
+        toast.success("Product link copied to clipboard!");
+      } catch (error) {
+        console.error("Error copying to clipboard:", error);
+        toast.error("Failed to copy link.");
+      }
+    }
+  };
+
+  // --- End New Handlers ---
 
   const formatDate = (dateString: string) => {
     return new Date(dateString).toLocaleDateString("en-US", {
@@ -159,7 +225,7 @@ export default function ProductDetailPage() {
             </h2>
             <button
               onClick={() => router.push("/products")}
-              className="px-4 py-2 bg-primary-600 text-white rounded-md" // Simple styling for the button
+              className="px-4 py-2 bg-primary-600 text-white rounded-md"
             >
               Back to Products
             </button>
@@ -169,7 +235,6 @@ export default function ProductDetailPage() {
     );
   }
 
-  // ... JSX remains the same ...
   return (
     <div className="min-h-screen bg-gray-50">
       <Header />
@@ -208,10 +273,22 @@ export default function ProductDetailPage() {
               )}
               {/* Action Buttons */}
               <div className="absolute top-4 right-4 flex space-x-2">
-                <button className="p-2 bg-white bg-opacity-90 rounded-full hover:bg-opacity-100">
-                  <Heart className="h-5 w-5 text-gray-600" />
+                <button
+                  onClick={handleLikeToggle} // Attach handler
+                  className="p-2 bg-white bg-opacity-90 rounded-full hover:bg-opacity-100"
+                  title={isLiked ? "Unlike" : "Like"}
+                >
+                  <Heart
+                    className={`h-5 w-5 ${
+                      isLiked ? "text-red-500 fill-current" : "text-gray-600"
+                    }`}
+                  />
                 </button>
-                <button className="p-2 bg-white bg-opacity-90 rounded-full hover:bg-opacity-100">
+                <button
+                  onClick={handleShare} // Attach handler
+                  className="p-2 bg-white bg-opacity-90 rounded-full hover:bg-opacity-100"
+                  title="Share Product"
+                >
                   <Share2 className="h-5 w-5 text-gray-600" />
                 </button>
               </div>

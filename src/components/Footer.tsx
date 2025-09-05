@@ -146,7 +146,7 @@ const Footer = () => {
             <p className="mt-4 text-base text-gray-600">
               Subscribe to our newsletter to get the latest news and offers.
             </p>
-            <form className="mt-4 flex flex-col sm:flex-row gap-2">
+            <form className="mt-4 flex flex-col sm:flex-row gap-2" suppressHydrationWarning={true}>
               <label htmlFor="email-address" className="sr-only">
                 Email address
               </label>

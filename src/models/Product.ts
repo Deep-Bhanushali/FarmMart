@@ -18,7 +18,7 @@ export interface IProduct extends mongoose.Document {
       lng: number;
     };
   };
-  farmer: mongoose.Types.ObjectId; // This refers to the 'User' model
+  farmer: mongoose.Types.ObjectId; 
   images: string[];
   isAvailable: boolean;
   harvestDate: Date;
@@ -33,6 +33,7 @@ export interface IProduct extends mongoose.Document {
   }>;
   createdAt: Date;
   updatedAt: Date;
+  likes: mongoose.Types.ObjectId[];
 }
 
 const productSchema = new mongoose.Schema<IProduct>(
@@ -112,11 +113,17 @@ const productSchema = new mongoose.Schema<IProduct>(
       min: 0,
       max: 5,
     },
+    likes: [
+      {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: 'User'
+      }
+    ],
     reviews: [
       {
         user: {
           type: mongoose.Schema.Types.ObjectId,
-          ref: "User", // This also depends on the User model
+          ref: "User", 
           required: true,
         },
         rating: {

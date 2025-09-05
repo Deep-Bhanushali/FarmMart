@@ -29,6 +29,7 @@ const CategoryCard = ({
           alt={`Image of ${name}`}
           fill
           className="object-cover transition-transform duration-300 group-hover:scale-105"
+          sizes="(max-width: 768px) 100vw, 50vw"
         />
         {/* Add a subtle overlay for better text readability */}
         <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-black/20 to-transparent transition-transform duration-300 group-hover:scale-105"></div>

@@ -10,6 +10,7 @@ import { useCart } from "@/hooks/useCart";
 import Header from "@/components/Header";
 import toast from "react-hot-toast";
 import FilterSidebar from "@/components/FilterSidebar";
+import { useMediaQuery } from "@/hooks/useMediaQuery";
 
 // A custom hook for debouncing
 const useDebounce = (value: string, delay: number) => {
@@ -61,8 +62,11 @@ export default function ProductsPage() {
   const [sortBy, setSortBy] = useState("createdAt");
   const [sortOrder, setSortOrder] = useState("desc");
 
-  const [currentPage, setCurrentPage] = useState(1);
+  const [currentPage,   setCurrentPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
+
+  const isMobile = useMediaQuery('(max-width: 640px)');
+  const isTablet = useMediaQuery('(max-width: 1024px)');
 
   const fetchProducts = useCallback(async () => {
     setLoading(true);
@@ -74,9 +78,11 @@ export default function ProductsPage() {
       if (filters.maxPrice) activeFilters.maxPrice = filters.maxPrice;
       if (filters.organic) activeFilters.organic = "true";
 
+      const limit = isMobile ? "6" : isTablet ? "9" : "12";
+
       const params = new URLSearchParams({
         page: currentPage.toString(),
-        limit: "12",
+        limit,
         sortBy,
         sortOrder,
         search: debouncedSearchTerm, 
@@ -98,7 +104,7 @@ export default function ProductsPage() {
     } finally {
       setLoading(false);
     }
-  }, [filters, currentPage, sortBy, sortOrder, debouncedSearchTerm]);
+  }, [filters, currentPage, sortBy, sortOrder, debouncedSearchTerm, isMobile, isTablet]);
 
   useEffect(() => {
     fetchProducts();
@@ -152,37 +158,30 @@ export default function ProductsPage() {
   };
 
   // --- START: NEW PAGINATION LOGIC ---
-  const getPaginationItems = () => {
+  const getPaginationItems = useCallback(() => {
     const items: (number | string)[] = [];
-    const maxPagesToShow = 3;
-    const startPage = Math.max(2, currentPage - 1);
-    const endPage = Math.min(totalPages - 1, currentPage + 1);
+    const neighbors = 1; // Number of pages to show on each side of the current page
 
-    // Always add the first page
-    items.push(1);
+    const startPage = Math.max(1, currentPage - neighbors);
+    const endPage = Math.min(totalPages, currentPage + neighbors);
 
-    // Add ellipsis if there's a gap after the first page
-    if (startPage > 2) {
+    // Show leading ellipsis if the start page is not the first page
+    if (startPage > 1) {
       items.push("...");
     }
 
-    // Add pages around the current page
+    // Render the page numbers in the main window
     for (let i = startPage; i <= endPage; i++) {
       items.push(i);
     }
-    
-    // Add ellipsis if there's a gap before the last page
-    if (endPage < totalPages - 1) {
+
+    // Show trailing ellipsis if the end page is not the last page
+    if (endPage < totalPages) {
       items.push("...");
     }
 
-    // Always add the last page if there's more than one page
-    if (totalPages > 1) {
-      items.push(totalPages);
-    }
-
     return items;
-  };
+  }, [currentPage, totalPages]);
 
   const paginationItems = getPaginationItems();
   // --- END: NEW PAGINATION LOGIC ---
@@ -390,10 +389,8 @@ export default function ProductsPage() {
               ))}
             </div>
 
-            {/* --- START: UPDATED PAGINATION CONTROLS --- */}
             {totalPages > 1 && (
               <div className="mt-8 flex justify-center">
-                {/* The `flex-wrap` and `gap-2` classes are key for mobile responsiveness */}
                 <nav className="flex items-center justify-center flex-wrap gap-2">
                   <button
                     onClick={() => setCurrentPage(Math.max(1, currentPage - 1))}
@@ -433,7 +430,6 @@ export default function ProductsPage() {
                 </nav>
               </div>
             )}
-            {/* --- END: UPDATED PAGINATION CONTROLS --- */}
           </>
         )}
       </div>

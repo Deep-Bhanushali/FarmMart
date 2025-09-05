@@ -6,12 +6,14 @@ import { ShoppingCart, User, LogIn, Menu, X, Heart } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
 import { useCart } from "@/hooks/useCart";
 import NotificationBell from "./NotificationBell";
+import { useRouter } from 'next/navigation';
 
 export default function Header() {
   const { user, logout } = useAuth();
   const { cartItems } = useCart();
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [isMounted, setIsMounted] = useState(false);
+  const router = useRouter();
 
   useEffect(() => {
     setIsMounted(true);
@@ -21,6 +23,10 @@ export default function Header() {
     (total, item) => total + item.quantity,
     0
   );
+  const redirectToProfile = () => {
+      router.push('/profile');
+  }
+
 
   return (
     <header className="bg-white shadow-sm border-b">
@@ -80,10 +86,10 @@ export default function Header() {
                   {user && <NotificationBell />}
                   {user ? (
                     <>
-                      <div className="flex items-center space-x-2">
+                      <button onClick={redirectToProfile} className="flex items-center space-x-2">
                         <User className="h-5 w-5 text-gray-600" />
                         <span className="text-gray-700">{user.name}</span>
-                      </div>
+                      </button>
                       <button onClick={logout} className="text-gray-700 hover:text-primary-600">
                         Logout
                       </button>

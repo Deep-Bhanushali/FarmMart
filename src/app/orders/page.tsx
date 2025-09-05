@@ -20,6 +20,7 @@ import { useAuth } from "@/hooks/useAuth";
 import Header from "@/components/Header";
 import toast from "react-hot-toast";
 import { Order, OrderStatus, PaymentStatus } from "@/types/index";
+import { useMediaQuery } from "@/hooks/useMediaQuery";
 
 
 interface FilterState {
@@ -108,12 +109,15 @@ export default function OrdersPage() {
   const [showFilters, setShowFilters] = useState(false);
   const [activeTab, setActiveTab] = useState("sales");
 
+  const isMobile = useMediaQuery('(max-width: 768px)');
+
   const fetchOrders = useCallback(async () => {
     if (!user) return;
 
     try {
       setLoading(true);
       const view = user.role === "farmer" ? activeTab : "purchases";
+      const limit = isMobile ? "6" : "10";
 
       const activeFilters: Record<string, string> = {};
       if (filters.status) activeFilters.status = filters.status;
@@ -123,7 +127,7 @@ export default function OrdersPage() {
 
       const params = new URLSearchParams({
         page: currentPage.toString(),
-        limit: "10",
+        limit,
         view,
         ...activeFilters,
       });
@@ -145,7 +149,7 @@ export default function OrdersPage() {
     } finally {
       setLoading(false);
     }
-  }, [user, filters, currentPage, activeTab]);
+  }, [user, filters, currentPage, activeTab, isMobile]);
 
   useEffect(() => {
     fetchOrders();
@@ -192,6 +196,33 @@ export default function OrdersPage() {
       minute: "2-digit",
     });
   };
+
+  const getPaginationItems = useCallback(() => {
+    const items: (number | string)[] = [];
+    const neighbors = 1; // Number of pages to show on each side of the current page
+
+    const startPage = Math.max(1, currentPage - neighbors);
+    const endPage = Math.min(totalPages, currentPage + neighbors);
+
+    // Show leading ellipsis if the start page is not the first page
+    if (startPage > 1) {
+      items.push("...");
+    }
+
+    // Render the page numbers in the main window
+    for (let i = startPage; i <= endPage; i++) {
+      items.push(i);
+    }
+
+    // Show trailing ellipsis if the end page is not the last page
+    if (endPage < totalPages) {
+      items.push("...");
+    }
+
+    return items;
+  }, [currentPage, totalPages]);
+
+  const paginationItems = getPaginationItems();
 
   const getStatusIcon = (status: OrderStatus) => {
     const config = statusConfig[status] || statusConfig.pending;
@@ -496,35 +527,44 @@ export default function OrdersPage() {
             })}
           </div>
         )}
+        {/* --- START: UPDATED PAGINATION CONTROLS --- */}
         {totalPages > 1 && (
           <div className="mt-8 flex justify-center">
-            <nav className="flex items-center space-x-2">
+            <nav className="flex items-center justify-center flex-wrap gap-2">
               <button
                 onClick={() => setCurrentPage(Math.max(1, currentPage - 1))}
                 disabled={currentPage === 1}
-                className="px-3 py-2 text-sm font-medium text-gray-500 bg-white border border-gray-300 rounded-md hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
+                className="px-3 py-2 text-sm font-medium text-gray-500 bg-white border border-gray-300 rounded-md hover:bg-gray-50 disabled:opacity-50"
               >
                 Previous
               </button>
-              {[...Array(totalPages)].map((_, i) => (
-                <button
-                  key={i + 1}
-                  onClick={() => setCurrentPage(i + 1)}
-                  className={`px-3 py-2 text-sm font-medium rounded-md ${
-                    currentPage === i + 1
-                      ? "text-white bg-primary-600 border border-primary-600"
-                      : "text-gray-500 bg-white border border-gray-300 hover:bg-gray-50"
-                  }`}
-                >
-                  {i + 1}
-                </button>
-              ))}
+              
+              {paginationItems.map((item, index) =>
+                typeof item === "number" ? (
+                  <button
+                    key={`${item}-${index}`}
+                    onClick={() => setCurrentPage(item)}
+                    className={`px-3 py-2 text-sm font-medium rounded-md ${
+                      currentPage === item
+                        ? "text-white bg-primary-600 border-primary-600"
+                        : "text-gray-500 bg-white border border-gray-300 hover:bg-gray-50"
+                    }`}
+                  >
+                    {item}
+                  </button>
+                ) : (
+                  <span key={`ellipsis-${index}`} className="px-3 py-2 text-sm font-medium text-gray-500">
+                    {item}
+                  </span>
+                )
+              )}
+
               <button
                 onClick={() =>
                   setCurrentPage(Math.min(totalPages, currentPage + 1))
                 }
                 disabled={currentPage === totalPages}
-                className="px-3 py-2 text-sm font-medium text-gray-500 bg-white border border-gray-300 rounded-md hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
+                className="px-3 py-2 text-sm font-medium text-gray-500 bg-white border border-gray-300 rounded-md hover:bg-gray-50 disabled:opacity-50"
               >
                 Next
               </button>

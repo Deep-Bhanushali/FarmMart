@@ -1,8 +1,6 @@
 "use client";
 
 import Link from "next/link";
-// Assuming you have a simple Logo component or you can just use text
-// import Logo from './Logo';
 
 const Footer = () => {
   return (
@@ -12,8 +10,8 @@ const Footer = () => {
           {/* Column 1: Branding & Tagline */}
           <div className="md:col-span-1">
             <div className="flex gap-2">
-              <div className="w-8 h-8 bg-primary-600 rounded-lg flex items-center justify-center">
-                <span className="text-white font-bold text-lg">F</span>
+              <div className="min-w-8 h-8 bg-primary-600 rounded-lg flex items-center justify-center">
+                <span className="text-white font-bold text-lg  ">F</span>
               </div>
               <h3 className="text-2xl font-bold text-gray-800">FarmMarket</h3>
             </div>
@@ -58,14 +56,14 @@ const Footer = () => {
 
           {/* Column 2: Quick Links */}
           <div>
-            <h3 className="text-sm font-semibold text-gray-500 tracking-wider uppercase">
+            <h3 className="text-base font-semibold text-gray-500 tracking-wider uppercase">
               Quick Links
             </h3>
             <ul className="mt-4 space-y-2">
               <li>
                 <Link
                   href="/products"
-                  className="text-base text-gray-600 hover:text-gray-900"
+                  className="text-sm text-gray-600 hover:text-gray-900"
                 >
                   Products
                 </Link>
@@ -73,7 +71,7 @@ const Footer = () => {
               <li>
                 <Link
                   href="/about"
-                  className="text-base text-gray-600 hover:text-gray-900"
+                  className="text-sm text-gray-600 hover:text-gray-900"
                 >
                   About Us
                 </Link>
@@ -81,7 +79,7 @@ const Footer = () => {
               <li>
                 <Link
                   href="/farmers"
-                  className="text-base text-gray-600 hover:text-gray-900"
+                  className="text-sm text-gray-600 hover:text-gray-900"
                 >
                   Our Farmers
                 </Link>
@@ -89,7 +87,7 @@ const Footer = () => {
               <li>
                 <Link
                   href="/contact"
-                  className="text-base text-gray-600 hover:text-gray-900"
+                  className="text-sm text-gray-600 hover:text-gray-900"
                 >
                   Contact
                 </Link>
@@ -99,14 +97,14 @@ const Footer = () => {
 
           {/* Column 3: Help & Support */}
           <div>
-            <h3 className="text-sm font-semibold text-gray-500 tracking-wider uppercase">
+            <h3 className="text-base font-semibold text-gray-500 tracking-wider uppercase">
               Support
             </h3>
             <ul className="mt-4 space-y-2">
               <li>
                 <Link
                   href="/faq"
-                  className="text-base text-gray-600 hover:text-gray-900"
+                  className="text-sm text-gray-600 hover:text-gray-900"
                 >
                   FAQ
                 </Link>
@@ -114,7 +112,7 @@ const Footer = () => {
               <li>
                 <Link
                   href="/shipping"
-                  className="text-base text-gray-600 hover:text-gray-900"
+                  className="text-sm text-gray-600 hover:text-gray-900"
                 >
                   Shipping Policy
                 </Link>
@@ -122,7 +120,7 @@ const Footer = () => {
               <li>
                 <Link
                   href="/returns"
-                  className="text-base text-gray-600 hover:text-gray-900"
+                  className="text-sm text-gray-600 hover:text-gray-900"
                 >
                   Return Policy
                 </Link>
@@ -130,7 +128,7 @@ const Footer = () => {
               <li>
                 <Link
                   href="/terms"
-                  className="text-base text-gray-600 hover:text-gray-900"
+                  className="text-sm text-gray-600 hover:text-gray-900"
                 >
                   Terms of Service
                 </Link>
@@ -140,10 +138,10 @@ const Footer = () => {
 
           {/* Column 4: Newsletter */}
           <div>
-            <h3 className="text-sm font-semibold text-gray-500 tracking-wider uppercase">
+            <h3 className="text-base font-semibold text-gray-500 tracking-wider uppercase">
               Stay Updated
             </h3>
-            <p className="mt-4 text-base text-gray-600">
+            <p className="mt-4 text-sm text-gray-600">
               Subscribe to our newsletter to get the latest news and offers.
             </p>
             <form className="mt-4 flex flex-col sm:flex-row gap-2" suppressHydrationWarning={true}>

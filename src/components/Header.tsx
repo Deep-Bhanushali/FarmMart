@@ -149,7 +149,7 @@ export default function Header() {
                 </Link>
                 {user ? (
                   <div className="pt-4 mt-2 border-t flex flex-col space-y-2">
-                    <div className="flex items-center space-x-2 text-gray-700"><User className="h-5 w-5" /><span>{user.name}</span></div>
+                    <button onClick={redirectToProfile} className="flex items-center space-x-2 text-gray-700"><User className="h-5 w-5" /><span>{user.name}</span></button>
                     <button onClick={() => { logout(); setIsMenuOpen(false); }} className="text-left text-gray-700 hover:text-primary-600">Logout</button>
                   </div>
                 ) : (

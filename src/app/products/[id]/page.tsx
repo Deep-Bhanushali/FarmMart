@@ -470,25 +470,23 @@ export default function ProductDetailPage() {
             )}
           </div>
         </div>
-        {/* Reviews */}
-        {product.reviews.length > 0 && (
+        {/* Reviews Section */}
+        {product.reviews && product.reviews.length > 0 && (
           <div className="mt-12">
-            <h2 className="text-2xl font-bold text-gray-900 mb-4">
-              Reviews ({product.reviews.length})
-            </h2>
+            <h2 className="text-2xl font-bold text-gray-900 mb-4">Reviews ({product.reviews.length})</h2>
             <div className="space-y-4">
               {product.reviews.map((review) => (
                 <div key={review._id} className="bg-white rounded-lg p-6">
                   <div className="flex items-center justify-between mb-2">
                     <div className="flex items-center space-x-2">
                       <span className="font-medium text-gray-900">
-                        {review.user.name}
+                        {/* THIS LINE IS NOW SAFE TO RENDER */}
+                        {review.user?.name}
                       </span>
                       <div className="flex">{renderStars(review.rating)}</div>
                     </div>
-                    <span className="text-sm text-gray-500">
-                      {formatDate(review.date)}
-                    </span>
+                    {/* The date property on the review should be `createdAt` from the review model */}
+                    <span className="text-sm text-gray-500">{formatDate(review.createdAt)}</span>
                   </div>
                   <p className="text-gray-700">{review.comment}</p>
                 </div>

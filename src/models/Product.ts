@@ -24,13 +24,8 @@ export interface IProduct extends mongoose.Document {
   harvestDate: Date;
   expiryDate?: Date;
   organic: boolean;
-  rating: number;
-  reviews: Array<{
-    user: mongoose.Types.ObjectId;
-    rating: number;
-    comment: string;
-    date: Date;
-  }>;
+  averageRating: number;
+  reviews: mongoose.Types.ObjectId[];
   createdAt: Date;
   updatedAt: Date;
   likes: mongoose.Types.ObjectId[];
@@ -107,58 +102,19 @@ const productSchema = new mongoose.Schema<IProduct>(
       type: Boolean,
       default: false,
     },
-    rating: {
-      type: Number,
-      default: 0,
-      min: 0,
-      max: 5,
-    },
+    averageRating: { type: Number, default: 0, min: 0, max: 5 },
     likes: [
       {
         type: mongoose.Schema.Types.ObjectId,
         ref: 'User'
       }
     ],
-    reviews: [
-      {
-        user: {
-          type: mongoose.Schema.Types.ObjectId,
-          ref: "User", 
-          required: true,
-        },
-        rating: {
-          type: Number,
-          required: true,
-          min: 1,
-          max: 5,
-        },
-        comment: {
-          type: String,
-          required: true,
-        },
-        date: {
-          type: Date,
-          default: Date.now,
-        },
-      },
-    ],
+    reviews: [{ type: mongoose.Schema.Types.ObjectId, ref: 'Review' }],
   },
   {
     timestamps: true,
   }
 );
-
-// Calculate average rating before saving
-productSchema.pre("save", function (next) {
-  if (this.reviews.length > 0) {
-    const totalRating = this.reviews.reduce(
-      (sum, review) => sum + review.rating,
-      0
-    );
-    this.rating = totalRating / this.reviews.length;
-  }
-  next();
-});
 
 export default mongoose.models.Product ||
   mongoose.model<IProduct>("Product", productSchema);

@@ -47,6 +47,7 @@ export interface Review {
   rating: number;
   comment: string;
   date: string;
+  createdAt: string;
 }
 
 export interface OrderItem {

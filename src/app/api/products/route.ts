@@ -39,7 +39,6 @@ export async function GET(req: NextRequest) {
     // Check cache first
     const cached = productsCache.get(cacheKey);
     if (cached && (Date.now() - cached.timestamp) < CACHE_DURATION) {
-      console.log("Serving products from cache");
       return NextResponse.json(cached.data, {
         headers: {
           'Cache-Control': 'public, s-maxage=300, stale-while-revalidate=600',

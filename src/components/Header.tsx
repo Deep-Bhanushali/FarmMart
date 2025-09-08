@@ -19,20 +19,16 @@ export default function Header() {
     setIsMounted(true);
   }, []);
 
-  // --- START: BODY SCROLL LOCK ---
-  // This effect adds/removes a class to the body to prevent scrolling when the overlay is open.
   useEffect(() => {
     if (isMenuOpen) {
       document.body.style.overflow = 'hidden';
     } else {
       document.body.style.overflow = 'auto';
     }
-    // Cleanup function to ensure scroll is restored if the component unmounts while open
     return () => {
       document.body.style.overflow = 'auto';
     };
   }, [isMenuOpen]);
-  // --- END: BODY SCROLL LOCK ---
 
   const cartItemCount = cartItems.reduce(
     (total, item) => total + item.quantity,
@@ -40,7 +36,6 @@ export default function Header() {
   );
   
   const redirectToProfile = () => {
-      // Close the mobile menu if it's open before navigating
       if (isMenuOpen) {
         setIsMenuOpen(false);
       }
@@ -110,8 +105,6 @@ export default function Header() {
         </div>
       </div>
 
-      {/* --- START: NEW MOBILE OVERLAY MENU --- */}
-      {/* Backdrop */}
       {isMenuOpen && (
         <div 
           className="fixed inset-0 bg-black/60 z-40 md:hidden" 

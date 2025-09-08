@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import dbConnect from "@/lib/db";
 import Product from "@/models/Product";
 import "@/models/User";
+import "@/models/reviews"; // Import Review model to ensure it's registered
 import { getUserFromRequest } from "@/lib/auth";
 
 // GET /api/products/[id] - Get a specific product
@@ -14,7 +15,13 @@ export async function GET(
 
     const product = await Product.findById(params.id)
       .populate("farmer", "name email phone address")
-      .populate("reviews.user", "name");
+      .populate({
+        path: 'reviews',
+        populate: {
+          path: 'user',
+          select: 'name'
+        }
+      });
 
     if (!product) {
       return NextResponse.json({ error: "Product not found" }, { status: 404 });

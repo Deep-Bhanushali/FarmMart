@@ -72,7 +72,8 @@ export default function ProfilePage() {
         // If farmer, fetch sales (orders got)
         if (user.role === 'farmer') {
           const salesResponse = await fetch('/api/orders?view=sales', {
-            headers: { Authorization: `Bearer ${token}` }
+            headers: { Authorization: `Bearer ${token}` },
+            cache: 'no-store'
           });
 
           if (salesResponse.ok) {

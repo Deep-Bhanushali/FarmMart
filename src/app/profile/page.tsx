@@ -4,7 +4,7 @@ import { useState, useEffect, FormEvent } from 'react';
 import { useAuth } from '@/hooks/useAuth';
 import { useRouter } from 'next/navigation';
 import Header from '@/components/Header';
-import { Edit, Save, Loader2, ShoppingBag, DollarSign, ListOrdered } from 'lucide-react';
+import { Edit, Save, Loader2, ShoppingBag, DollarSign, ListOrdered, TrendingUp, ArrowDown } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { Order } from '@/types'; 
 import { format } from 'date-fns';
@@ -33,7 +33,9 @@ export default function ProfilePage() {
   });
 
   const [orders, setOrders] = useState<Order[]>([]);
+  const [salesOrders, setSalesOrders] = useState<Order[]>([]);
   const [totalCount, setTotalCount] = useState(0);
+  const [salesCount, setSalesCount] = useState(0);
   const [isOrdersLoading, setIsOrdersLoading] = useState(true);
   const [activeTab, setActiveTab] = useState('orders');
 
@@ -51,18 +53,34 @@ export default function ProfilePage() {
       setIsOrdersLoading(true);
       try {
         const token = localStorage.getItem('token');
-        const response = await fetch('/api/orders', {
-          headers: { Authorization: `Bearer ${token}` }
+
+        // Fetch purchases (orders made)
+        const purchasesResponse = await fetch('/api/orders', {
+          headers: { Authorization: `Bearer ${token}` },
+          cache: 'no-store'
         });
 
-        if (!response.ok) {
-          const errorData = await response.json();
+        if (!purchasesResponse.ok) {
+          const errorData = await purchasesResponse.json();
           throw new Error(errorData.error || "Failed to fetch orders");
         }
-        
-        const data = await response.json();
-        setOrders(data.orders || data);
-        setTotalCount(data.pagination?.total || 0)
+
+        const purchasesData = await purchasesResponse.json();
+        setOrders(purchasesData.orders || purchasesData);
+        setTotalCount(purchasesData.pagination?.total || 0);
+
+        // If farmer, fetch sales (orders got)
+        if (user.role === 'farmer') {
+          const salesResponse = await fetch('/api/orders?view=sales', {
+            headers: { Authorization: `Bearer ${token}` }
+          });
+
+          if (salesResponse.ok) {
+            const salesData = await salesResponse.json();
+            setSalesOrders(salesData.orders || salesData);
+            setSalesCount(salesData.pagination?.total || 0);
+          }
+        }
 
       } catch (error) {
         toast.error(error instanceof Error ? error.message : "Could not load your order history.");
@@ -141,38 +159,91 @@ export default function ProfilePage() {
         </h1>
 
         {/* Dashboard Stats Section */}
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
-          <div className="bg-white rounded-lg shadow p-6 flex items-center">
-            <div className="bg-blue-100 text-blue-600 rounded-full p-3"><ShoppingBag className="h-6 w-6" /></div>
-            <div className="ml-4">
-              <p className="text-sm text-gray-500">Total Orders</p>
-              {isOrdersLoading ? (
-                <div className="h-8 w-16 bg-gray-200 rounded animate-pulse mt-1"></div>
-              ) : (
-                <p className="text-2xl font-bold text-gray-900">{totalCount}</p>
-              )}
+        {user.role === 'farmer' ? (
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+            <div className="bg-white rounded-lg shadow p-6 flex items-center">
+              <div className="bg-blue-100 text-blue-600 rounded-full p-3"><ShoppingBag className="h-6 w-6" /></div>
+              <div className="ml-4">
+                <p className="text-sm text-gray-500">Total Orders Got</p>
+                {isOrdersLoading ? (
+                  <div className="h-8 w-16 bg-gray-200 rounded animate-pulse mt-1"></div>
+                ) : (
+                  <p className="text-2xl font-bold text-gray-900">{salesCount}</p>
+                )}
+              </div>
+            </div>
+            <div className="bg-white rounded-lg shadow p-6 flex items-center">
+              <div className="bg-purple-100 text-purple-600 rounded-full p-3"><ListOrdered className="h-6 w-6" /></div>
+              <div className="ml-4">
+                <p className="text-sm text-gray-500">Total Orders Made</p>
+                {isOrdersLoading ? (
+                  <div className="h-8 w-16 bg-gray-200 rounded animate-pulse mt-1"></div>
+                ) : (
+                  <p className="text-2xl font-bold text-gray-900">{totalCount}</p>
+                )}
+              </div>
+            </div>
+            <div className="bg-white rounded-lg shadow p-6 flex items-center">
+              <div className="bg-green-100 text-green-600 rounded-full p-3"><TrendingUp className="h-6 w-6" /></div>
+              <div className="ml-4">
+                <p className="text-sm text-gray-500">Total Earned</p>
+                {isOrdersLoading ? (
+                  <div className="h-8 w-24 bg-gray-200 rounded animate-pulse mt-1"></div>
+                ) : (
+                  <p className="text-2xl font-bold text-gray-900">
+                    ${salesOrders.reduce((acc, order) => acc + order.totalAmount, 0).toFixed(2)}
+                  </p>
+                )}
+              </div>
+            </div>
+            <div className="bg-white rounded-lg shadow p-6 flex items-center">
+              <div className="bg-red-100 text-red-600 rounded-full p-3"><ArrowDown className="h-6 w-6" /></div>
+              <div className="ml-4">
+                <p className="text-sm text-gray-500">Total Spent</p>
+                {isOrdersLoading ? (
+                  <div className="h-8 w-24 bg-gray-200 rounded animate-pulse mt-1"></div>
+                ) : (
+                  <p className="text-2xl font-bold text-gray-900">
+                    ${orders.reduce((acc, order) => acc + order.totalAmount, 0).toFixed(2)}
+                  </p>
+                )}
+              </div>
             </div>
           </div>
-          <div className="bg-white rounded-lg shadow p-6 flex items-center">
-            <div className="bg-green-100 text-green-600 rounded-full p-3"><DollarSign className="h-6 w-6" /></div>
-            <div className="ml-4">
-              <p className="text-sm text-gray-500">Total Spent</p>
-              {isOrdersLoading ? (
-                <div className="h-8 w-24 bg-gray-200 rounded animate-pulse mt-1"></div>
-              ) : (
-                <p className="text-2xl font-bold text-gray-900">
-                  ${orders.reduce((acc, order) => acc + order.totalAmount, 0).toFixed(2)}
-                </p>
-              )}
+        ) : (
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
+            <div className="bg-white rounded-lg shadow p-6 flex items-center">
+              <div className="bg-blue-100 text-blue-600 rounded-full p-3"><ShoppingBag className="h-6 w-6" /></div>
+              <div className="ml-4">
+                <p className="text-sm text-gray-500">Total Orders</p>
+                {isOrdersLoading ? (
+                  <div className="h-8 w-16 bg-gray-200 rounded animate-pulse mt-1"></div>
+                ) : (
+                  <p className="text-2xl font-bold text-gray-900">{totalCount}</p>
+                )}
+              </div>
+            </div>
+            <div className="bg-white rounded-lg shadow p-6 flex items-center">
+              <div className="bg-green-100 text-green-600 rounded-full p-3"><DollarSign className="h-6 w-6" /></div>
+              <div className="ml-4">
+                <p className="text-sm text-gray-500">Total Spent</p>
+                {isOrdersLoading ? (
+                  <div className="h-8 w-24 bg-gray-200 rounded animate-pulse mt-1"></div>
+                ) : (
+                  <p className="text-2xl font-bold text-gray-900">
+                    ${orders.reduce((acc, order) => acc + order.totalAmount, 0).toFixed(2)}
+                  </p>
+                )}
+              </div>
             </div>
           </div>
-        </div>
+        )}
 
         {/* Tabbed Interface */}
         <div className="bg-white rounded-lg shadow">
           <div className="border-b border-gray-200">
             <nav className="-mb-px flex space-x-8 px-6" aria-label="Tabs">
-              <button onClick={() => setActiveTab('orders')} className={`${activeTab === 'orders' ? 'border-primary-500 text-primary-600' : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'} whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm`}>Order History</button>
+              <button onClick={() => setActiveTab('orders')} className={`${activeTab === 'orders' ? 'border-primary-500 text-primary-600' : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'} whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm`}>{user.role === 'farmer' ? 'Purchases' : 'Order History'}</button>
               <button onClick={() => setActiveTab('settings')} className={`${activeTab === 'settings' ? 'border-primary-500 text-primary-600' : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'} whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm`}>Account Settings</button>
             </nav>
           </div>

@@ -2,9 +2,11 @@ import { NextRequest, NextResponse } from "next/server";
 import dbConnect from "@/lib/db";
 import Product from "@/models/Product";
 import { getUserFromRequest } from "@/lib/auth";
-import { setCache, getCache } from "@/lib/redis";
+import { Product as ProductType } from "@/types";
 
-const CACHE_DURATION = 5 * 60; 
+// Simple in-memory cache for products
+const productsCache = new Map<string, { data: { products: ProductType[]; currentPage: number; totalPages: number }; timestamp: number }>();
+const CACHE_DURATION = 5 * 60 * 1000; // 5 minutes
 
 const generateCacheKey = (params: URLSearchParams) => {
   const relevantParams = ['search', 'category', 'location', 'minPrice', 'maxPrice', 'organic', 'page', 'limit', 'sortBy', 'sortOrder'];
@@ -35,9 +37,9 @@ export async function GET(req: NextRequest) {
     const cacheKey = generateCacheKey(searchParams);
 
     // Check cache first
-    const cached = await getCache(cacheKey);
-    if (cached) {
-      return NextResponse.json(cached, {
+    const cached = productsCache.get(cacheKey);
+    if (cached && (Date.now() - cached.timestamp) < CACHE_DURATION) {
+      return NextResponse.json(cached.data, {
         headers: {
           'Cache-Control': 'public, s-maxage=300, stale-while-revalidate=600',
           'X-Cache-Status': 'HIT'
@@ -106,8 +108,7 @@ export async function GET(req: NextRequest) {
       .populate("farmer", "name email")
       .sort(sortOptions)
       .skip(skip)
-      .limit(limit)
-      .lean();
+      .limit(limit);
 
     const responseData = {
       products,
@@ -116,7 +117,20 @@ export async function GET(req: NextRequest) {
     };
 
     // Cache the response
-    await setCache(cacheKey, responseData, CACHE_DURATION);
+    productsCache.set(cacheKey, {
+      data: responseData,
+      timestamp: Date.now()
+    });
+
+    // Clean up old cache entries periodically
+    if (productsCache.size > 100) {
+      const cutoff = Date.now() - CACHE_DURATION;
+      for (const [key, value] of productsCache.entries()) {
+        if (value.timestamp < cutoff) {
+          productsCache.delete(key);
+        }
+      }
+    }
 
     return NextResponse.json(responseData, {
       headers: {

@@ -21,8 +21,7 @@ export async function GET(
           path: 'user',
           select: 'name'
         }
-      })
-      .lean();
+      });
 
     if (!product) {
       return NextResponse.json({ error: "Product not found" }, { status: 404 });
@@ -69,23 +68,10 @@ export async function PUT(
 
     const updateData = await req.json();
 
-    // Whitelist allowed fields for update
-    const allowedFields = [
-      'name', 'description', 'price', 'category', 'quantity', 'unit',
-      'farmLocation', 'harvestDate', 'images', 'organic', 'isAvailable'
-    ];
-
-    const filteredUpdateData: Record<string, unknown> = {};
-    for (const field of allowedFields) {
-      if (updateData.hasOwnProperty(field)) {
-        filteredUpdateData[field] = updateData[field];
-      }
-    }
-
     // Update product
     const updatedProduct = await Product.findByIdAndUpdate(
       params.id,
-      filteredUpdateData,
+      updateData,
       { new: true, runValidators: true }
     ).populate("farmer", "name email");
 

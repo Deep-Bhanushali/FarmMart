@@ -34,8 +34,11 @@ export function verifyToken(token: string): JWTPayload | null {
 }
 
 export function getTokenFromRequest(req: NextRequest): string | null {
-  const token = req.cookies.get("token")?.value;
-  return token || null;
+  const authHeader = req.headers.get("authorization");
+  if (authHeader && authHeader.startsWith("Bearer ")) {
+    return authHeader.substring(7);
+  }
+  return null;
 }
 
 export function getUserFromRequest(req: NextRequest): JWTPayload | null {

@@ -80,10 +80,12 @@ export async function PUT(
 
     const body = await req.json();
 
-    // Payment status updates should only happen via webhooks (source of truth)
-    if (body.paymentStatus) {
+    // Customer updating payment status (THIS SHOULD NOT HAPPEN, but as a safeguard)
+    // The webhook is the source of truth for payment updates.
+    if (body.paymentStatus && (!user || user.role !== "admin")) {
+      // Only an admin could manually override.
       return NextResponse.json(
-        { error: "Forbidden: Payment status can only be updated via webhooks." },
+        { error: "Forbidden: Only webhooks can update payment status." },
         { status: 403 }
       );
     }

@@ -48,6 +48,7 @@ export default function ProfilePage() {
       return;
     }
 
+    // If a user exists, fetch their order history.
     const fetchOrders = async () => {
       setIsOrdersLoading(true);
       try {

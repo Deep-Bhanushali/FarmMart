@@ -17,16 +17,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    // Check for stored token on app load
-    const token = localStorage.getItem("token");
+    // Check for stored user data on app load
     const userData = localStorage.getItem("user");
 
-    if (token && userData) {
+    if (userData) {
       try {
         setUser(JSON.parse(userData));
       } catch (error) {
         console.error("Error parsing user data:", error);
-        localStorage.removeItem("token");
         localStorage.removeItem("user");
       }
     }
@@ -49,7 +47,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         throw new Error(data.error || "Login failed");
       }
 
-      localStorage.setItem("token", data.token);
       localStorage.setItem("user", JSON.stringify(data.user));
       setUser(data.user);
       toast.success("Login successful!");
@@ -79,7 +76,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         throw new Error(data.error || "Registration failed");
       }
 
-      localStorage.setItem("token", data.token);
       localStorage.setItem("user", JSON.stringify(data.user));
       setUser(data.user);
       toast.success("Registration successful!");
@@ -98,11 +94,21 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     localStorage.setItem("user", JSON.stringify(newUserData));
   };
 
-  const logout = () => {
-    localStorage.removeItem("token");
-    localStorage.removeItem("user");
-    setUser(null);
-    toast.success("Logged out successfully");
+  const logout = async () => {
+    try {
+      await fetch("/api/auth/logout", {
+        method: "POST",
+      });
+      localStorage.removeItem("user");
+      setUser(null);
+      toast.success("Logged out successfully");
+    } catch (error) {
+      console.error("Logout error:", error);
+      // Still clear local state even if API call fails
+      localStorage.removeItem("user");
+      setUser(null);
+      toast.success("Logged out successfully");
+    }
   };
 
   const value: AuthContextType = {
